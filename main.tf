@@ -1,18 +1,82 @@
-resource "aws_instance" "local_vm" {
-  ami           = "ami-12345678"
-  instance_type = "t2.micro"
-  tags = {
-    Name = "LocalStack-EC2"
-  }
+##########################################
+# Terraform Configuration File (main.tf)
+# Project: Terraform + Ansible + Jenkins Pipeline
+# Author: Hemanth Kumar Chikkala
+##########################################
 
-  # Trigger Ansible playbook after Terraform apply
-  provisioner "local-exec" {
-    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.ini playbook.yml"
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
 }
 
+##########################################
+# Provider Configuration
+##########################################
+provider "aws" {
+  region  = var.aws_region
+  profile = var.aws_profile
+}
+
+provider "random" {}
+
+##########################################
+# Random ID for unique bucket name
+##########################################
+resource "random_id" "bucket_suffix" {
+  byte_length = 4
+}
+
+##########################################
+# S3 Bucket (with unique name)
+##########################################
 resource "aws_s3_bucket" "local_bucket" {
-  bucket = "hemanth-localstack-demo"
-  acl    = "private"
+  bucket = "hemanth-localstack-demo-${random_id.bucket_suffix.hex}"
+  force_destroy = true
+  tags = {
+    Name = "LocalStack-Demo-Bucket"
+    Project = "Terraform-Ansible-Jenkins"
+  }
 }
 
+##########################################
+# EC2 Instance (Local Testing / Mock Setup)
+##########################################
+resource "aws_instance" "local_vm" {
+  ami           = var.ami_id
+  instance_type = var.instance_type
+
+  tags = {
+    Name    = "LocalStack-EC2"
+    Project = "Terraform-Ansible-Jenkins"
+  }
+
+  # Example: Run local Ansible provisioning
+  provisioner "local-exec" {
+    command = <<EOT
+      echo "Running local Ansible Playbook..."
+      ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.ini playbook.yml
+    EOT
+  }
+}
+
+##########################################
+# Terraform Outputs
+##########################################
+output "bucket_name" {
+  description = "The name of the S3 bucket created"
+  value       = aws_s3_bucket.local_bucket.bucket
+}
+
+output "instance_id" {
+  description = "The ID of the EC2 instance created"
+  value       = aws_instance.local_vm.id
+}
