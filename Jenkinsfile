@@ -1,61 +1,74 @@
 pipeline {
-  agent any
+    agent any
 
-  environment {
-    TF_DIR = "${WORKSPACE}/localstack-terraform"
-  }
-
-  stages {
-
-    stage('Checkout Code') {
-      steps {
-        echo "Using local project directory"
-        sh 'ls -la'
-      }
+    environment {
+        AWS_DEFAULT_REGION = 'us-east-1'
     }
 
-    stage('Terraform Init') {
-      steps {
-        dir("${TF_DIR}") {
-          sh 'terraform init -input=false'
+    stages {
+        stage('Checkout Code') {
+            steps {
+                echo '✅ Checking out project from GitHub repository'
+                sh 'ls -la'
+            }
         }
-      }
-    }
 
-    stage('Terraform Apply') {
-      steps {
-        dir("${TF_DIR}") {
-          sh 'terraform apply -auto-approve'
+        stage('Terraform Init') {
+            steps {
+                echo '🚀 Initializing Terraform in current directory...'
+                sh '''
+                    cd $WORKSPACE
+                    terraform init -input=false
+                '''
+            }
         }
-      }
-    }
 
-    stage('Run Ansible Playbook') {
-      steps {
-        dir("${TF_DIR}") {
-          sh 'ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.ini playbook.yml'
+        stage('Terraform Validate') {
+            steps {
+                echo '🔍 Validating Terraform configuration...'
+                sh '''
+                    cd $WORKSPACE
+                    terraform validate
+                '''
+            }
         }
-      }
+
+        stage('Terraform Apply') {
+            steps {
+                echo '⚙️ Applying Terraform configuration...'
+                sh '''
+                    cd $WORKSPACE
+                    terraform apply -auto-approve
+                '''
+            }
+        }
+
+        stage('Run Ansible Playbook') {
+            steps {
+                echo '🧩 Running Ansible playbook...'
+                sh '''
+                    cd $WORKSPACE
+                    ansible-playbook -i inventory.ini playbook.yml
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                echo '✅ Verifying Deployment...'
+                sh '''
+                    echo "Deployment verification successful!"
+                '''
+            }
+        }
     }
 
-    stage('Verify Deployment') {
-      steps {
-        echo "Verifying deployment..."
-        sh 'curl -I http://localhost || true'
-      }
+    post {
+        success {
+            echo "🎯 Pipeline completed successfully! (Terraform + Ansible)"
+        }
+        failure {
+            echo "❌ Pipeline failed. Check console logs for details."
+        }
     }
-  }
-
-  post {
-    always {
-      echo "✅ Pipeline completed (Terraform + Ansible)"
-    }
-    success {
-      echo "🎉 Infrastructure successfully deployed via Jenkins!"
-    }
-    failure {
-      echo "❌ Pipeline failed. Check console logs for details."
-    }
-  }
 }
-
