@@ -29,26 +29,27 @@ provider "aws" {
 provider "random" {}
 
 ##########################################
-# Random ID for unique bucket name
+# Random ID for Unique Bucket Name
 ##########################################
 resource "random_id" "bucket_suffix" {
   byte_length = 4
 }
 
 ##########################################
-# S3 Bucket (with unique name)
+# S3 Bucket Resource
 ##########################################
 resource "aws_s3_bucket" "local_bucket" {
-  bucket = "hemanth-localstack-demo-${random_id.bucket_suffix.hex}"
+  bucket        = "hemanth-localstack-demo-${random_id.bucket_suffix.hex}"
   force_destroy = true
+
   tags = {
-    Name = "LocalStack-Demo-Bucket"
+    Name    = "LocalStack-Demo-Bucket"
     Project = "Terraform-Ansible-Jenkins"
   }
 }
 
 ##########################################
-# EC2 Instance (Local Testing / Mock Setup)
+# EC2 Instance (For Local Testing)
 ##########################################
 resource "aws_instance" "local_vm" {
   ami           = var.ami_id
@@ -59,17 +60,16 @@ resource "aws_instance" "local_vm" {
     Project = "Terraform-Ansible-Jenkins"
   }
 
-  # Example: Run local Ansible provisioning
   provisioner "local-exec" {
     command = <<EOT
-      echo "Running local Ansible Playbook..."
+      echo "Running Ansible Playbook..."
       ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.ini playbook.yml
     EOT
   }
 }
 
 ##########################################
-# Terraform Outputs
+# Outputs
 ##########################################
 output "bucket_name" {
   description = "The name of the S3 bucket created"
