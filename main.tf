@@ -26,16 +26,17 @@ provider "aws" {
   access_key = "test"
   secret_key = "test"
 
-  # Configure endpoints for LocalStack
-  endpoints = {
+  # Use LocalStack endpoint for S3
+  endpoints {
     s3 = "http://localhost:4566"
   }
 
-  # Disable unnecessary AWS checks
+  # Skip real AWS checks
   skip_credentials_validation = true
   skip_metadata_api_check     = true
   skip_requesting_account_id  = true
 }
+
 
 
 ##########################################
