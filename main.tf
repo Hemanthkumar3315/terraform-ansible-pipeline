@@ -22,17 +22,21 @@ terraform {
 # Provider Configuration
 ##########################################
 provider "aws" {
-  region                      = var.aws_region
-  access_key                  = "mock_access_key"
-  secret_key                  = "mock_secret_key"
-  s3_force_path_style         = true
+  region  = var.aws_region
+  access_key = "test"
+  secret_key = "test"
+
+  # Configure endpoints for LocalStack
+  endpoints = {
+    s3 = "http://localhost:4566"
+  }
+
+  # Disable unnecessary AWS checks
   skip_credentials_validation = true
   skip_metadata_api_check     = true
   skip_requesting_account_id  = true
-  endpoints {
-    s3 = "http://localhost:4566" # LocalStack endpoint
-  }
 }
+
 
 ##########################################
 # Random ID for Unique Bucket Name
